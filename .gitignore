@@ -1,8 +1,14 @@
-# http://www.gnu.org/software/automake
+# Automake / Autoconf / Libtool
 
-Makefile.in
+*.log
+*.in
 
-# http://www.gnu.org/software/autoconf
+Makefile
+config.h
+config.status
+.libs
+.deps
+stamp-h1
 
 /autom4te.cache
 /aclocal.m4
@@ -11,3 +17,18 @@ Makefile.in
 /depcomp
 /install-sh
 /missing
+/libtool
+
+# C++
+*.o
+*.la
+*.lo
+/mdf4-export/mdf4-export
+/mdf4-info/mdf4-info
+
+# Eclipse
+.settings
+
+# Backups
+*~
+*.bak
