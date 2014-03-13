@@ -23,6 +23,9 @@
 #define LIBMDF_H
 
 #include "file.h"
+#include "channel.h"
+#include "channelgroup.h"
+#include "datagroup.h"
 
 namespace mdf {
 

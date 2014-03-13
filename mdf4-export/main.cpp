@@ -38,8 +38,6 @@
 #include "libmdf4.h"
 #include "../config.h"
 
-static char* command;
-
 // GETTEXT
 #if ENABLE_NLS
 # include <libintl.h>
@@ -62,7 +60,7 @@ static int data_group_index = -1;
 static int channel_group_index = -1;
 static std::string channel_ranges;
 
-static const char short_options[] = "sud:r:g:p:c:hV";
+static const char short_options[] = "sSuUd:r:g:p:c:hV";
 static const struct option long_options[] = {
     {"column-header", 0, 0, 's'},
     {"no-column-header", 0, 0, 'S'},
@@ -214,8 +212,6 @@ int main(int argc, char *argv[]) {
   textdomain(PACKAGE);
 #endif
 
-  command = argv[0];
-
   while ((c = getopt_long(argc, argv, short_options, long_options, &option_index)) != -1) {
     switch (c) {
     case 's':
@@ -249,8 +245,8 @@ int main(int argc, char *argv[]) {
       }
       catch (const boost::bad_lexical_cast&)
       {
-        fprintf(stderr, _("Argument for data group is invalid\n"));
-        fprintf(stderr, _("Try `%s --help' for help.\n"), command);
+        fputs(_("Argument for data group is invalid\n"), stderr);
+        fputs(_("Try `mdf4-export --help' for more information."), stderr);
         return EXIT_FAILURE;
       }
       break;
@@ -262,8 +258,8 @@ int main(int argc, char *argv[]) {
       }
       catch (const boost::bad_lexical_cast&)
       {
-        fprintf(stderr, _("Argument for channel group is invalid\n"));
-        fprintf(stderr, _("Try `%s --help' for help.\n"), command);
+        fputs(_("Argument for channel group is invalid\n"), stderr);
+        fputs(_("Try `mdf4-export --help' for more information."), stderr);
         return EXIT_FAILURE;
       }
       break;
@@ -281,17 +277,19 @@ int main(int argc, char *argv[]) {
       return EXIT_SUCCESS;
 
     default:
-      fprintf(stderr, _("Try `%s --help' for more information.\n"), command);
+      fputs(_("Try `mdf4-export --help' for more information."), stderr);
       return EXIT_FAILURE;
     }
   }
 
-  if (argc - option_index != 1) {
-    usage();
+  if (argc - optind != 1) {
+    printf("%d - %d != 1", argc, optind);
+    fprintf(stderr, _("No or more than one file is given.\n"));
+    fprintf(stderr, _("Try `mdf4-export --help' for help.\n"));
     return EXIT_FAILURE;
   }
 
-  mdf::file mdf_file(argv[option_index]);
+  mdf::file mdf_file(argv[optind]);
   std::vector<std::vector<double> > data;
   std::vector<std::string> column_names;
   std::vector<std::string> column_units;
@@ -331,19 +329,33 @@ int main(int argc, char *argv[]) {
 
   // parse channel ranges
   std::vector<int> channel_list;
-  try
-  {
-    channel_list = parse_ranges(optarg, channels.size());
+  if (!channel_ranges.empty()) {
+    try
+    {
+      channel_list = parse_ranges(channel_ranges, channels.size());
+    }
+    catch (const std::exception&)
+    {
+      fputs(_("Argument for channel list is invalid\n"), stderr);
+      fputs(_("Try `mdf4-export --help' for more information."), stderr);
+      return EXIT_FAILURE;
+    }
   }
-  catch (const std::exception&)
+  else
   {
-    fprintf(stderr, _("Argument for channel list is invalid\n"));
-    fprintf(stderr, _("Try `%s --help' for help.\n"), command);
-    return EXIT_FAILURE;
+    for (std::size_t i = 0; i < channels.size(); i++)
+    {
+      channel_list.push_back(i);
+    }
+  }
+
+  if (channel_list.empty()) {
+    return EXIT_SUCCESS;
   }
 
   // build table
-  for (const auto& ch : channels) {
+  for (int channel_index : channel_list) {
+    const mdf::channel& ch = channels[channel_index];
     column_names.emplace_back(ch.get_name());
     column_units.emplace_back(ch.get_metadata_unit());
 
@@ -353,27 +365,30 @@ int main(int argc, char *argv[]) {
 
   // print column header
   if (print_column_header) {
-    for (const auto& name : column_names) {
-      fputs(name.c_str(), stdout);
+    fputs(column_names[0].c_str(), stdout);
+    for (std::size_t i = 1; i < column_names.size(); i++) {
       fputs(column_delimiter.c_str(), stdout);
+      fputs(column_names[i].c_str(), stdout);
     }
     fputs(row_delimiter.c_str(), stdout);
   }
 
   // print unit row
   if (print_unit_row) {
-    for (const auto& unit : column_units) {
-      fputs(unit.c_str(), stdout);
+    fputs(column_units[0].c_str(), stdout);
+    for (std::size_t i = 1; i < column_units.size(); i++) {
       fputs(column_delimiter.c_str(), stdout);
+      fputs(column_units[i].c_str(), stdout);
     }
     fputs(row_delimiter.c_str(), stdout);
   }
 
   // print data
-  for (std::size_t i = 0; i < data[0].size(); i++) {
-    for (std::size_t j = 0; j < data.size(); j++) {
-      printf("%lf", data.at(j).at(i));
+  for (std::size_t i = 1; i < data[0].size(); i++) {
+    printf("%lf", data.at(0).at(i));
+    for (std::size_t j = 1; j < data.size(); j++) {
       fputs(column_delimiter.c_str(), stdout);
+      printf("%lf", data.at(j).at(i));
     }
     fputs(row_delimiter.c_str(), stdout);
   }

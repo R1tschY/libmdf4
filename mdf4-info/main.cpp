@@ -91,12 +91,12 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  if (argc - option_index != 1) {
+  if (argc - optind != 1) {
     usage();
     return 0;
   }
 
-  mdf::file mdf_file(argv[option_index]);
+  mdf::file mdf_file(argv[optind]);
   printf("Version: %s\n", mdf_file.get_mdf_version_string().c_str());
   printf("Generator: %s\n", mdf_file.get_generator_name().c_str());
   printf("Comment: \n%s\n", mdf_file.get_comment().c_str());
