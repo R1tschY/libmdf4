@@ -354,7 +354,6 @@ int main(int argc, char *argv[]) {
   }
 
   if (argc - optind != 1) {
-    printf("%d - %d != 1", argc, optind);
     fprintf(stderr, _("No or more than one file is given.\n"));
     fprintf(stderr, _("Try `mdf4-export --help' for help.\n"));
     return EXIT_FAILURE;
