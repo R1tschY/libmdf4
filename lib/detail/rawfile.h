@@ -22,7 +22,6 @@
 #ifndef LIBMDF_RAWFILE_H_
 #define LIBMDF_RAWFILE_H_
 
-#include <string>
 #include <cstdio>
 #include <memory>
 #include <system_error>
@@ -61,6 +60,10 @@ public:
     file_handle_()
   { }
 
+  rawfile(FILE* file) noexcept :
+    file_handle_(file)
+  { }
+
   rawfile(boost::string_ref filename, boost::string_ref mode) :
     file_handle_()
   {
@@ -68,6 +71,15 @@ public:
   }
 
   void open(boost::string_ref filename, boost::string_ref mode);
+
+  void warp(FILE* file) noexcept
+  {
+    file_handle_.reset(file);
+  }
+
+  FILE* release() noexcept {
+    return file_handle_.release();
+  }
 
   bool is_open() const noexcept {
     return file_handle_ != nullptr;
@@ -121,6 +133,11 @@ public:
     if (fwrite(&t, sizeof(T), 1, file_handle_.get()) != 1)
       throw io_error();
   }
+  template<typename T>
+  void write(T* t, std::size_t n) {
+    if (fwrite(t, sizeof(T), n, file_handle_.get()) != n)
+      throw io_error();
+  }
   void write(char t);
 
   template<typename T, std::size_t N>
@@ -133,6 +150,12 @@ public:
     if (fwrite(t.data(), sizeof(T::value_type), t.size(), file_handle_.get()) != t.size())
       throw io_error();
   }
+
+  void write_text(boost::string_ref text) {
+    write(text.data(), text.size());
+  }
+
+  void write_formated(const char* format, ...);
 
   void seek(long int offset, seek_orgin origin = seek_orgin::begin);
 

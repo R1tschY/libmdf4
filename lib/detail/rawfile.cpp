@@ -21,7 +21,7 @@
 
 #include "rawfile.h"
 
-#include <cstring>
+#include <stdarg.h>
 
 namespace mdf {
 
@@ -29,7 +29,14 @@ io_error::~io_error() noexcept
 { }
 
 void rawfile::open(boost::string_ref filename, boost::string_ref mode)  {
-  file_handle_.reset(fopen(filename.data(), mode.data()));
+  if (*filename.end() != '\0') {
+    // filename ist not null terminated
+    std::string tmp(filename.begin(), filename.end());
+    file_handle_.reset(fopen(tmp.c_str(), mode.data()));
+
+  } else {
+    file_handle_.reset(fopen(filename.data(), mode.data()));
+  }
   if (!file_handle_) throw io_error();
 }
 
@@ -42,6 +49,16 @@ void rawfile::read(char& t) {
 void rawfile::write(char t) {
   if (fputc(t, file_handle_.get()) != t)
     throw io_error();
+}
+
+void rawfile::write_formated(const char* format, ...) {
+  va_list vl;
+  va_start(vl, format);
+  int chars = vfprintf(file_handle_.get(), format, vl);
+  va_end(vl);
+  if (chars < 0) {
+    throw io_error();
+  }
 }
 
 void rawfile::seek(long int offset, seek_orgin origin) {

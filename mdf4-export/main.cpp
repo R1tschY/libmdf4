@@ -59,8 +59,9 @@ static std::string row_delimiter = "\n";
 static int data_group_index = -1;
 static int channel_group_index = -1;
 static std::string channel_ranges;
+static std::string output_file = "-";
 
-static const char short_options[] = "sSuUd:r:g:p:c:hV";
+static const char short_options[] = "sSuUd:r:g:p:c:o:hV";
 static const struct option long_options[] = {
     {"column-header", 0, 0, 's'},
     {"no-column-header", 0, 0, 'S'},
@@ -71,6 +72,7 @@ static const struct option long_options[] = {
     {"data-group", required_argument, 0, 'g'},
     {"channel-group", required_argument, 0, 'p'},
     {"channels", required_argument, 0, 'c'},
+    {"output", required_argument, 0, 'o'},
     {"help", 0, 0, 'h'},
     {"version", 0, 0, 'V'},
     {0, 0, 0, 0}
@@ -91,6 +93,7 @@ static void usage() {
         "  -g, --data-group=GROUP  use only this data group\n"
         "  -p, --channel-group=GROUP use only this channel group\n"
         "  -c, --channels=LIST     print only channels in LIST\n"
+        "  -o, --output=FILE       writes output to FILE (default is stdout)\n"
         "  -h, --help              print this help\n"
         "      --version           print current version\n"
         "\n"
@@ -109,9 +112,10 @@ static void usage() {
         "\n"
         "Report libmdf4 bugs to <" PACKAGE_BUGREPORT ">\n"));
   puts("Copyright (C) 2014  Richard Liebscher");
-  puts(_("This program comes with ABSOLUTELY NO WARRANTY.\n"
-    "This is free software, and you are welcome to redistribute it\n"
-    "under certain conditions."));
+  puts(_(
+      "This program comes with ABSOLUTELY NO WARRANTY.\n"
+      "This is free software, and you are welcome to redistribute it\n"
+      "under certain conditions."));
 }
 
 static void version()
@@ -328,7 +332,11 @@ int main(int argc, char *argv[]) {
       break;
 
     case 'c':
-      channel_ranges = optarg;
+      channel_ranges.assign(optarg);
+      break;
+
+    case 'o':
+      output_file.assign(optarg);
       break;
 
     case 'h':
@@ -352,108 +360,141 @@ int main(int argc, char *argv[]) {
     return EXIT_FAILURE;
   }
 
-  mdf::file mdf_file(argv[optind]);
-  std::vector<std::vector<double> > data;
-  std::vector<std::string> column_names;
-  std::vector<std::string> column_units;
+  try {
+    mdf::file mdf_file;
+    try {
+      mdf_file.open(argv[optind]);
 
-  // choose data group
-  const auto& data_groups = mdf_file.get_data_groups();
-  if (data_group_index == -1) {
-    if (data_groups.size() > 1) {
-      fprintf(stderr, _("More than one data group in file. Use `-g' option to choose data group.\n"));
+    } catch (const mdf::io_error& e) {
+      fprintf(stderr, _("Error while opening input file %s: %s\n"),
+          argv[optind], e.what());
       return EXIT_FAILURE;
-    } else {
-      data_group_index = 0;
     }
-  }
-  if (data_group_index >= static_cast<int>(data_groups.size())) {
-    fprintf(stderr, _("Data group %d is not existing in file.\n"), data_group_index);
+
+    std::vector<std::vector<double> > data;
+    std::vector<std::string> column_names;
+    std::vector<std::string> column_units;
+
+    // choose data group
+    const auto& data_groups = mdf_file.get_data_groups();
+    if (data_group_index == -1) {
+      if (data_groups.size() > 1) {
+        fprintf(stderr, _("More than one data group in file. Use `-g' option to choose data group.\n"));
+        return EXIT_FAILURE;
+      } else {
+        data_group_index = 0;
+      }
+    }
+    if (data_group_index >= static_cast<int>(data_groups.size())) {
+      fprintf(stderr, _("Data group %d is not existing in file.\n"), data_group_index);
+      return EXIT_FAILURE;
+    }
+    const auto& data_group = data_groups[data_group_index];
+
+    // choose channel group
+    const auto& channel_groups = data_group.get_channel_groups();
+    if (channel_group_index == -1) {
+      if (channel_groups.size() > 1) {
+        fprintf(stderr, _("More than one channel group in file. Use `-g' option to choose channel group.\n"));
+        return EXIT_FAILURE;
+      } else {
+        channel_group_index = 0;
+      }
+    }
+    if (channel_group_index > static_cast<int>(channel_groups.size())) {
+      fprintf(stderr, _("Channel group %d does not exist in file.\n"), channel_group_index);
+      return EXIT_FAILURE;
+    }
+    const auto& channel_group = channel_groups[channel_group_index];
+    const auto& channels = channel_group.get_channels();
+
+    // parse channel ranges
+    std::vector<int> channel_list;
+    if (!channel_ranges.empty()) {
+      try
+      {
+        channel_list = parse_ranges(channel_ranges, channels.size());
+      }
+      catch (const std::exception&)
+      {
+        fputs(_("Argument for channel list is invalid\n"), stderr);
+        fputs(_("Try `mdf4-export --help' for more information."), stderr);
+        return EXIT_FAILURE;
+      }
+    }
+    else
+    {
+      for (std::size_t i = 0; i < channels.size(); i++)
+      {
+        channel_list.push_back(i);
+      }
+    }
+
+    if (channel_list.empty()) {
+      return EXIT_SUCCESS;
+    }
+
+    // open output file
+    mdf::rawfile output;
+    if (output_file == "-")
+    {
+      output.warp(stdout);
+    }
+    else
+    {
+      try {
+        output.open(output_file, "w");
+
+      } catch (const mdf::io_error& e) {
+        fprintf(stderr, _("Error while opening output file %s: %s\n"),
+            output_file.c_str(), e.what());
+        return EXIT_FAILURE;
+      }
+    }
+
+    // build table
+    for (int channel_index : channel_list) {
+      const mdf::channel& ch = channels[channel_index];
+      column_names.emplace_back(ch.get_name());
+      column_units.emplace_back(ch.get_metadata_unit());
+
+      data.emplace_back();
+      ch.get_data_real(data.back());
+    }
+
+    // print column header
+    if (print_column_header) {
+      output.write_text(column_names[0]);
+      for (std::size_t i = 1; i < column_names.size(); i++) {
+        output.write_text(column_delimiter);
+        output.write_text(column_names[i]);
+      }
+      output.write_text(row_delimiter);
+    }
+
+    // print unit row
+    if (print_unit_row) {
+      output.write_text(column_units[0]);
+      for (std::size_t i = 1; i < column_units.size(); i++) {
+        output.write_text(column_delimiter);
+        output.write_text(column_units[i]);
+      }
+      output.write_text(row_delimiter);
+    }
+
+    // print data
+    for (std::size_t i = 1; i < data[0].size(); i++) {
+      output.write_formated("%lf", data.at(0).at(i));
+      for (std::size_t j = 1; j < data.size(); j++) {
+        output.write_text(column_delimiter);
+        output.write_formated("%lf", data.at(j).at(i));
+      }
+      output.write_text(row_delimiter);
+    }
+
+  } catch (const mdf::io_error& e) {
+    fprintf(stderr, _("Error while reading or writing: %s\n"), e.what());
     return EXIT_FAILURE;
-  }
-  const auto& data_group = data_groups[data_group_index];
-
-  // choose channel group
-  const auto& channel_groups = data_group.get_channel_groups();
-  if (channel_group_index == -1) {
-    if (channel_groups.size() > 1) {
-      fprintf(stderr, _("More than one channel group in file. Use `-g' option to choose channel group.\n"));
-      return EXIT_FAILURE;
-    } else {
-      channel_group_index = 0;
-    }
-  }
-  if (channel_group_index > static_cast<int>(channel_groups.size())) {
-    fprintf(stderr, _("Channel group %d does not exist in file.\n"), channel_group_index);
-    return EXIT_FAILURE;
-  }
-  const auto& channel_group = channel_groups[channel_group_index];
-  const auto& channels = channel_group.get_channels();
-
-  // parse channel ranges
-  std::vector<int> channel_list;
-  if (!channel_ranges.empty()) {
-    try
-    {
-      channel_list = parse_ranges(channel_ranges, channels.size());
-    }
-    catch (const std::exception&)
-    {
-      fputs(_("Argument for channel list is invalid\n"), stderr);
-      fputs(_("Try `mdf4-export --help' for more information."), stderr);
-      return EXIT_FAILURE;
-    }
-  }
-  else
-  {
-    for (std::size_t i = 0; i < channels.size(); i++)
-    {
-      channel_list.push_back(i);
-    }
-  }
-
-  if (channel_list.empty()) {
-    return EXIT_SUCCESS;
-  }
-
-  // build table
-  for (int channel_index : channel_list) {
-    const mdf::channel& ch = channels[channel_index];
-    column_names.emplace_back(ch.get_name());
-    column_units.emplace_back(ch.get_metadata_unit());
-
-    data.emplace_back();
-    ch.get_data_real(data.back());
-  }
-
-  // print column header
-  if (print_column_header) {
-    fputs(column_names[0].c_str(), stdout);
-    for (std::size_t i = 1; i < column_names.size(); i++) {
-      fputs(column_delimiter.c_str(), stdout);
-      fputs(column_names[i].c_str(), stdout);
-    }
-    fputs(row_delimiter.c_str(), stdout);
-  }
-
-  // print unit row
-  if (print_unit_row) {
-    fputs(column_units[0].c_str(), stdout);
-    for (std::size_t i = 1; i < column_units.size(); i++) {
-      fputs(column_delimiter.c_str(), stdout);
-      fputs(column_units[i].c_str(), stdout);
-    }
-    fputs(row_delimiter.c_str(), stdout);
-  }
-
-  // print data
-  for (std::size_t i = 1; i < data[0].size(); i++) {
-    printf("%lf", data.at(0).at(i));
-    for (std::size_t j = 1; j < data.size(); j++) {
-      fputs(column_delimiter.c_str(), stdout);
-      printf("%lf", data.at(j).at(i));
-    }
-    fputs(row_delimiter.c_str(), stdout);
   }
 
   return EXIT_SUCCESS;
