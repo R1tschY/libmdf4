@@ -82,17 +82,17 @@ static void usage() {
         "Export data channels from a mdf4 file to csv format."
         "\n"
         "Mandatory arguments to long options are mandatory for short options too.\n"
-        "-s, --column-header     print column header with channel name (default)\n"
-        "-S, --no-column-header  do not print column header with channel name\n"
-        "-u, --unit-row          print row with channel units\n"
-        "-U, --no-unit-row       do not print row with channel units\n"
-        "-d, --delimiter=DELIM   use DELIM instead of , for field delimiter\n"
-        "-r, --row-delimiter=DELIM use DELIM instead of new line for row delimiter\n"
-        "-g, --data-group=GROUP  use only this data group\n"
-        "-p, --channel-group=GROUP use only this channel group\n"
-        "-c, --channels=LIST     print only channels in LIST\n"
-        "-h, --help              print this help\n"
-        "    --version           print current version\n"
+        "  -s, --column-header     print column header with channel name (default)\n"
+        "  -S, --no-column-header  do not print column header with channel name\n"
+        "  -u, --unit-row          print row with channel units\n"
+        "  -U, --no-unit-row       do not print row with channel units\n"
+        "  -d, --delimiter=DELIM   use DELIM instead of ',' for field delimiter\n"
+        "  -r, --row-delimiter=DELIM use DELIM instead of new line for row delimiter\n"
+        "  -g, --data-group=GROUP  use only this data group\n"
+        "  -p, --channel-group=GROUP use only this channel group\n"
+        "  -c, --channels=LIST     print only channels in LIST\n"
+        "  -h, --help              print this help\n"
+        "      --version           print current version\n"
         "\n"
         "The channel LIST is made up of one range, or many ranges separated\n"
         "by commas. Selected input is written in the same order that it is\n"
@@ -103,6 +103,9 @@ static void usage() {
         "  N-    from N'th channel to last channel\n"
         "  N-M   from N'th to M'th (included) channel\n"
         "  -M    from first to M'th (included) channel\n"
+        "\n"
+        "The delimiter DELIM in option -d and -r can have escape sequences.\n"
+        "Supported escape sequences are \\, \t, \n, \r, \', \" and \0.\n"
         "\n"
         "Report libmdf4 bugs to <" PACKAGE_BUGREPORT ">\n"));
   puts("Copyright (C) 2014  Richard Liebscher");
@@ -120,18 +123,83 @@ static void version()
     "under certain conditions."));
 }
 
-static int atoi(boost::string_ref::iterator begin, boost::string_ref::iterator end)
+static int atoi(boost::string_ref str)
 {
-  int result = boost::lexical_cast<int>(begin, end - begin);
+  int result = boost::lexical_cast<int>(str.data(), str.size());
   if (result < 0) {
     throw std::exception();
   }
   return result;
 }
 
-inline int atoi(boost::string_ref str)
+inline boost::string_ref make_string_ref(boost::iterator_range<boost::string_ref::iterator> string_range)
 {
-  return atoi(str.begin(), str.end());
+  return boost::string_ref(string_range.begin(), string_range.size());
+}
+
+inline boost::string_ref make_string_ref(
+    boost::string_ref::iterator string_begin,
+    boost::string_ref::iterator string_end)
+{
+  return boost::string_ref(string_begin, string_end - string_begin);
+}
+
+static std::string unescape(boost::string_ref str)
+{
+  std::string result;
+
+  for (const char* ptr = str.begin(); ptr != str.end(); ptr++) {
+    switch (*ptr) {
+    case '\\':
+      ptr++;
+      if (ptr == str.end())
+      {
+        result.push_back('\\');
+        break;
+      }
+      switch (*ptr) {
+      case 't':
+        result.push_back('\t');
+        break;
+
+      case 'n':
+        result.push_back('\n');
+        break;
+
+      case 'r':
+        result.push_back('\r');
+        break;
+
+      case '\\':
+        result.push_back('\\');
+        break;
+
+      case '\'':
+        result.push_back('\'');
+        break;
+
+      case '\"':
+        result.push_back('\"');
+        break;
+
+      case '0':
+        result.push_back('\0');
+        break;
+
+      default:
+        result.push_back('\\');
+        result.push_back(*ptr);
+        break;
+      }
+      break;
+
+    default:
+      result.push_back(*ptr);
+      break;
+    }
+  }
+
+  return result;
 }
 
 static void check_channel_bounds(int n, int channel_count)
@@ -149,7 +217,7 @@ static void parse_range(std::vector<int>& result, boost::string_ref str_range, i
   if (sep == str_range.begin())
   {
     // -M
-    int end = atoi(str_range.begin() + 1, str_range.end());
+    int end = atoi(str_range.substr(1));
     check_channel_bounds(end, channel_count);
     for (int i = 0; i <= end; i++) {
       result.push_back(i);
@@ -165,7 +233,7 @@ static void parse_range(std::vector<int>& result, boost::string_ref str_range, i
   else if (sep == str_range.end() - 1)
   {
     // N-
-    int start = atoi(str_range.begin(), str_range.end() - 1);
+    int start = atoi(make_string_ref(str_range.begin(), sep));
     check_channel_bounds(start, channel_count);
     for (int i = start; i < channel_count; i++) {
       result.push_back(i);
@@ -174,19 +242,14 @@ static void parse_range(std::vector<int>& result, boost::string_ref str_range, i
   else
   {
     // N-M
-    int start = atoi(str_range.begin(), sep);
-    int end = atoi(sep + 1, str_range.end());
+    int start = atoi(make_string_ref(str_range.begin(), sep));
+    int end = atoi(make_string_ref(sep + 1, str_range.end()));
     check_channel_bounds(start, channel_count);
     check_channel_bounds(end, channel_count);
     for (int i = start; i <= end; i++) {
       result.push_back(i);
     }
   }
-}
-
-inline boost::string_ref make_string_ref(boost::iterator_range<boost::string_ref::iterator> string_range)
-{
-  return boost::string_ref(string_range.begin(), string_range.size());
 }
 
 static std::vector<int> parse_ranges(boost::string_ref str_ranges, int channel_count)
@@ -231,11 +294,11 @@ int main(int argc, char *argv[]) {
       break;
 
     case 'd':
-      column_delimiter.assign(optarg);
+      column_delimiter = unescape(optarg);
       break;
 
     case 'r':
-      row_delimiter.assign(optarg);
+      row_delimiter = unescape(optarg);
       break;
 
     case 'g':
