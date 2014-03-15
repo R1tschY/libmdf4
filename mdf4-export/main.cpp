@@ -86,7 +86,7 @@ static void usage() {
         "Mandatory arguments to long options are mandatory for short options too.\n"
         "  -s, --column-header     print column header with channel name (default)\n"
         "  -S, --no-column-header  do not print column header with channel name\n"
-        "  -u, --unit-row          print row with channel units\n"
+        "  -u, --unit-row          print row with channel units (default)\n"
         "  -U, --no-unit-row       do not print row with channel units\n"
         "  -d, --delimiter=DELIM   use DELIM instead of ',' for field delimiter\n"
         "  -r, --row-delimiter=DELIM use DELIM instead of new line for row delimiter\n"
@@ -290,11 +290,11 @@ int main(int argc, char *argv[]) {
       break;
 
     case 'u':
-      print_column_header = true;
+      print_unit_row = true;
       break;
 
     case 'U':
-      print_column_header = false;
+      print_unit_row = false;
       break;
 
     case 'd':

@@ -22,6 +22,7 @@
 #include "mdf4.h"
 
 #include <algorithm>
+#include <cstring>
 
 #include "rawfile.h"
 #include "xml.h"
@@ -76,11 +77,12 @@ std::string prase_tx(rawfile* file, link l) {
   if (header.id != make_id('T', 'X') && header.id != make_id('M', 'D')) {
     throw error("format error: not a MD or TX block!");
   }
-  if (header.length == sizeof(block_header)) {
+  if (header.length <= sizeof(block_header)) {
     return result;
   }
 
-  file->read_to_container(result, header.length - sizeof(block_header) + 1);
+  file->read_to_container(result, header.length - sizeof(block_header));
+  result.resize(strlen(result.c_str()));
   return result;
 }
 
