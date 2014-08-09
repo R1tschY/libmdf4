@@ -171,13 +171,12 @@ size_t decode_entities(const boost::string_ref src, std::string& dest) {
 
   while ((current = std::find(current_begin, end_input, '&')) != end_input) {
     if (current_begin != current) {
-      dest.append(current_begin, current - 1);
+      dest.append(current_begin, current);
     }
 
     auto end = std::find(current + 1, end_input, ';');
     if (end == end_input) {
-      current_begin = end + 1;
-      break;
+      return 0;
     }
     if (std::distance(current, end) < 2) {
       current_begin = end + 1;

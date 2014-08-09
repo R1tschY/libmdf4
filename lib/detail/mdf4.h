@@ -56,10 +56,10 @@ struct block_header {
 
 // CG Channel Group
 struct cgblock {
-  uint64_t _unkown1;
+  uint64_t _unknown1;
   uint64_t cycle_count;
   uint16_t flags;
-  uint8_t _unkown2[6];
+  uint8_t _unknown2[6];
   uint32_t data_bytes;
   uint32_t inval_bytes;
 } PACKED;
@@ -75,14 +75,14 @@ struct cnblock {
   uint32_t flags;
   uint32_t inval_bit_pos;
   uint8_t precision;
-  uint8_t _unkown[3];
+  uint8_t _unknown[3];
   double val_range[2];
   double limit[4];
 } PACKED;
 
 // SI Source Information
 struct siblock {
-  uint8_t _unkown[3];
+  uint8_t _unknown[3];
 } PACKED;
 
 // CC Channel conversion

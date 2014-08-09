@@ -108,7 +108,7 @@ static void usage() {
         "  -M    from first to M'th (included) channel\n"
         "\n"
         "The delimiter DELIM in option -d and -r can have escape sequences.\n"
-        "Supported escape sequences are \\, \t, \n, \r, \', \" and \0.\n"
+        "Supported escape sequences are \\\\, \\t, \\n, \\r, \\', \\\" and \\0.\n"
         "\n"
         "Report libmdf4 bugs to <" PACKAGE_BUGREPORT ">\n"));
   puts("Copyright (C) 2014  Richard Liebscher");
@@ -483,10 +483,10 @@ int main(int argc, char *argv[]) {
 
     // print data
     for (std::size_t i = 1; i < data[0].size(); i++) {
-      output.write_formated("%lf", data.at(0).at(i));
+      output.write_formated("%lf", data[0][i]);
       for (std::size_t j = 1; j < data.size(); j++) {
         output.write_text(column_delimiter);
-        output.write_formated("%lf", data.at(j).at(i));
+        output.write_formated("%lf", data[j][i]);
       }
       output.write_text(row_delimiter);
     }
