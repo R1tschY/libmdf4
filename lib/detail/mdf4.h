@@ -54,6 +54,38 @@ struct block_header {
   uint64_t link_count;
 } PACKED;
 
+/// HD Header Block
+struct hdblock {
+  /// Absolute start time in nanoseconds since midnight Jan 1st, 1970
+  uint64_t start_time_ns;
+
+  /// Time zone offset in minutes
+  uint16_t tz_offset_min;
+
+  /// Daylight saving time (DST) offset in minutes
+  uint16_t dst_offset_min;
+
+  /// Timeflags
+  /// 0b10 -> OFFSET_VALID
+  uint8_t time_flags;
+
+  /// Time quality class
+  /// 0 = TIME_SRC_PC
+  uint8_t time_class;
+
+  /// Flags
+  uint8_t flags;
+
+  /// Reserved
+  int8_t _reserved;
+
+  /// Start angle in radians at start of measurement
+  real start_angle_rad;
+
+  /// Start distance in meters at start of measurement
+  real start_distance_m;
+};
+
 // CG Channel Group
 struct cgblock {
   uint64_t _unknown1;
