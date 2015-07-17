@@ -127,10 +127,6 @@ static convert_func get_conv_func(const boost::optional<channel_conversation>& c
 
 
 void channel::get_data_real(std::vector<double>& data) const {
-  auto n = channel_group_->get_cycle_count();
-
-  auto nRecLen = channel_group_->get_data_bytes() + channel_group_->get_inval_bytes();
-
   convert_func conv_func = get_conv_func(channel_conversation_);
 
   if (get_type() == 3) {
@@ -224,11 +220,14 @@ void channel::get_data_real(std::vector<double>& data) const {
   if (cn_.bit_offset != 0) {
     throw error("Bit offset in channel data not supported");
   }
+  
+  auto n = channel_group_->get_cycle_count();
+  auto nRecLen = channel_group_->get_data_bytes() + channel_group_->get_inval_bytes();
 
   const std::vector<std::string>& complete_data = channel_group_->get_data_group()->get_data();
   for (std::size_t i = 0; i < complete_data.size(); i++) {
     auto nBytes = complete_data[i].size();
-    auto nRec = std::min(n, nBytes / nRecLen);
+    auto nRec = std::min<uint64_t>(n, nBytes / nRecLen);
 
 /*    const char* ptr = complete_data[i].data() + cn_.byte_offset;
     for (std::size_t i = 0; i < nRec; i++) {
