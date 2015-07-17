@@ -41,9 +41,11 @@ void rawfile::open(boost::string_ref filename, boost::string_ref mode)  {
 }
 
 void rawfile::read(char& t) {
-  t = fgetc(file_handle_.get());
-  if (t == EOF)
+  int c = fgetc(file_handle_.get());
+  if (c == EOF)
     throw io_error();
+    
+  t = static_cast<char>(c);
 }
 
 void rawfile::write(char t) {

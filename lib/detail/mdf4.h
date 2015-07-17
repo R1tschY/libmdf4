@@ -129,8 +129,8 @@ struct ccblock {
 
 // intern types
 
-constexpr uint16_t make_id(int c1, int c2) {
-  return c2 * 256 + c1;
+constexpr uint16_t make_id(char c1, char c2) {
+  return static_cast<uint16_t>((static_cast<uint16_t>(c2) << 8u) + static_cast<uint16_t>(c1));
 }
 
 class error : public std::exception {

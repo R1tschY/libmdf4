@@ -59,8 +59,10 @@ void file::prase_idblock() {
     // file is corrupted
     throw error("file is corrupted");
   }
-  file_version_ = (id.format_id[0]-'0') * 100 +
-      (id.format_id[2]-'0') * 10 + (id.format_id[3] - '0');
+  file_version_ = static_cast<uint16_t>(
+      (id.format_id[0]-'0') * 100 +
+      (id.format_id[2]-'0') * 10 + 
+      (id.format_id[3] - '0'));
 
   /*for 3.x: byte_order_ = (id.default_byte_order == 0) ?
       byte_order::little_endian :
@@ -99,10 +101,10 @@ std::string file::get_mdf_version_string() const {
   int m = _t % 10;
 
   std::string result;
-  result.push_back(mj + '0');
+  result.push_back(static_cast<char>(mj + '0'));
   result.push_back('.');
-  result.push_back(mi + '0');
-  result.push_back(m + '0');
+  result.push_back(static_cast<char>(mi + '0'));
+  result.push_back(static_cast<char>(m + '0'));
   return result;
 }
 

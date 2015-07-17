@@ -29,10 +29,20 @@ include_HEADERS = libmdf4.h file.h channel.h channelconversation.h \
                   block.h \
                   detail/mdf4.h detail/macros.h
 
-# Linker options libTestProgram
 libmdf4_la_LDFLAGS = 
 
-# Compiler options. Here we are adding the include directory
-# to be searched for headers included in the source code.
-libmdf4_la_CPPFLAGS = -std=gnu++0x
+libmdf4_la_CPPFLAGS = \
+  -std=gnu++0x \
+  -Wall \
+  -Wextra \
+  -Wshadow \
+  -Wnon-virtual-dtor \
+  -Wold-style-cast \
+  -Wcast-align \
+  -Wunused \
+  -Woverloaded-virtual \
+  -Wundef \
+  -Wcast-qual \
+  -Wconditionally-supported \
+  -Wconversion
 

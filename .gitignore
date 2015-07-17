@@ -13,6 +13,7 @@ ar-lib
 config.guess
 config.sub
 ltmain.sh
+.dirstamp
 
 /m4
 /autom4te.cache

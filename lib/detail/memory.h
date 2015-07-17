@@ -48,11 +48,25 @@ public:
   T& operator*() {
     return *pos_;
   }
-
+  
   self_type& operator+=(int n) {
     typedef const char* char_pointer;
     char_pointer& ptr = static_cast<char_pointer&>(pos_);
     ptr += offset_ * n;
+    return *this;
+  }
+
+  self_type& operator+=(std::size_t n) {
+    typedef const char* char_pointer;
+    char_pointer& ptr = static_cast<char_pointer&>(pos_);
+    ptr += offset_ * n;
+    return *this;
+  }
+  
+  self_type& operator-=(std::size_t n) {
+    typedef const char* char_pointer;
+    char_pointer& ptr = static_cast<char_pointer&>(pos_);
+    ptr -= offset_ * n;
     return *this;
   }
 

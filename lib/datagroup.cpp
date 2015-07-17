@@ -130,7 +130,7 @@ void data_group::read_DL(rawfile* file, link pos) const {
   data_.get() = get_recs(file, dt_extra);
 }
 
-void data_group::read_DT(rawfile* file, data_group* dg, link pos) const {
+void data_group::read_DT(rawfile* file, data_group*, link pos) const {
   data_.get() = get_recs(file, { pos });
 }
 

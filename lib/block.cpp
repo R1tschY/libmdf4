@@ -23,13 +23,13 @@
 
 namespace mdf {
 
-block::block(const std::shared_ptr<rawfile>& file, link l) :
+block::block(const std::shared_ptr<rawfile>& file, link) :
     file_(file), parent_(nullptr)
 {
 
 }
 
-block::block(const block* parent, link l) :
+block::block(const block* parent, link) :
     file_(parent->get_file()), parent_(parent)
 {
 

@@ -29,8 +29,6 @@
 #include "libmdf4.h"
 #include "../config.h"
 
-static int quiet_mode = 0;
-static void* handle;
 static char* command;
 
 static bool show_file_mdf_version = false;

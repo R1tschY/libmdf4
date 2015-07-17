@@ -82,8 +82,7 @@ T reverse_byte_order(T* value) {
 }
 
 template<typename T>
-static void convert_none(const channel_conversation& cc, T& value) {
-}
+static void convert_none(const channel_conversation&, T&) { }
 
 template<typename T>
 static void convert_linear(const channel_conversation& cc, T& value) {
@@ -131,7 +130,7 @@ void channel::get_data_real(std::vector<double>& data) const {
 
   if (get_type() == 3) {
     for (std::size_t i = 0; i < channel_group_->get_cycle_count(); i++) {
-      data.push_back(i);
+      data.push_back(static_cast<double>(i));
 
       // Channel Conversion
       if (channel_conversation_) {

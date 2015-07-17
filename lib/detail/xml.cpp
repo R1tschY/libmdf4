@@ -114,22 +114,22 @@ static boost::string_ref get_named_entity(boost::string_ref name) {
 
 static void putc_utf8(unsigned long cp, std::string& buffer) {
   if (cp <= 0x007Ful) {
-    buffer.push_back(cp);
+    buffer.push_back(static_cast<char>(cp));
 
   } else if (cp <= 0x07FFul) {
-    buffer.push_back((2 << 6) | (cp & 0x3F));
-    buffer.push_back((6 << 5) | (cp >> 6));
+    buffer.push_back(static_cast<char>((2 << 6) | (cp & 0x3F)));
+    buffer.push_back(static_cast<char>((6 << 5) | (cp >> 6)));
 
   } else if (cp <= 0xFFFFul) {
-    buffer.push_back((2 << 6) | (cp & 0x3F));
-    buffer.push_back((2 << 6) | ((cp >> 6) & 0x3F));
-    buffer.push_back((14 << 4) | (cp >> 12));
+    buffer.push_back(static_cast<char>((2 << 6) | (cp & 0x3F)));
+    buffer.push_back(static_cast<char>((2 << 6) | ((cp >> 6) & 0x3F)));
+    buffer.push_back(static_cast<char>((14 << 4) | (cp >> 12)));
 
   } else if (cp <= 0x10FFFFul) {
-    buffer.push_back((2 << 6) | (cp & 0x3F));
-    buffer.push_back((2 << 6) | ((cp >> 6) & 0x3F));
-    buffer.push_back((2 << 6) | ((cp >> 12) & 0x3F));
-    buffer.push_back((30 << 3) | (cp >> 18));
+    buffer.push_back(static_cast<char>((2 << 6) | (cp & 0x3F)));
+    buffer.push_back(static_cast<char>((2 << 6) | ((cp >> 6) & 0x3F)));
+    buffer.push_back(static_cast<char>((2 << 6) | ((cp >> 12) & 0x3F)));
+    buffer.push_back(static_cast<char>((30 << 3) | (cp >> 18)));
   }
 }
 
