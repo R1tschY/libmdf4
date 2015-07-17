@@ -6,7 +6,7 @@ AC_CONFIG_MACRO_DIR([m4])
 
 AC_CANONICAL_SYSTEM
 
-AM_INIT_AUTOMAKE([foreign no-dist-gzip dist-bzip2 -Wall -Werror])
+AM_INIT_AUTOMAKE([foreign no-dist-gzip dist-bzip2 -Wall]) #-Werror
 AC_ISC_POSIX
 AC_PROG_CXX
 AC_PROG_INSTALL
