@@ -9,7 +9,12 @@ config.status
 .libs
 .deps
 stamp-h1
+ar-lib
+config.guess
+config.sub
+ltmain.sh
 
+/m4
 /autom4te.cache
 /aclocal.m4
 /compile
