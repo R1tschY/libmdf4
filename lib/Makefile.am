@@ -43,6 +43,5 @@ libmdf4_la_CPPFLAGS = \
   -Woverloaded-virtual \
   -Wundef \
   -Wcast-qual \
-  -Wconditionally-supported \
   -Wconversion
 
